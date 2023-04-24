@@ -1,5 +1,5 @@
 import torch
-import config
+import src.GraphGAN.config as config
 import numpy as np
 from src import utils
 
@@ -11,9 +11,9 @@ class Generator(object):
         self.embedding_matrix = torch.randn(self.node_emd_init.shape)
         self.bias_vector = torch.zeros([self.n_node])
 
-        self.node_id = 0
-        self.node_neighbor_id = 0
-        self.reward = 0
+        self.node_id: int = 0
+        self.node_neighbor_id: int = 0
+        self.reward: int = 0
 
         self.all_score = torch.matmul(self.embedding_matrix,self.embedding_matrix.t()) + self.bias_vector
         self.node_embedding = torch.index_select(self.embedding_matrix, 0, self.node_id)

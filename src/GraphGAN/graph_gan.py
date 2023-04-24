@@ -5,9 +5,9 @@ import multiprocessing
 import pickle
 import numpy as np
 import torch 
-import config
-import generator
-import discriminator
+import src.GraphGAN.config as config
+import src.GraphGAN.discriminator as discriminator
+import src.GraphGAN.generator as generator
 from src import utils
 from src.evaluation import link_prediction as lp
 
@@ -24,12 +24,12 @@ class GraphGAN(object):
 
         # n_node * n_emb 的矩阵
         self.node_embed_init_d = utils.read_embeddings(filename=config.pretrain_emb_filename_d,
-                                                       n_node = self.n_node,
-                                                       n_embed = config.n_emb)
+                                                       n_node=self.n_node,
+                                                       n_embed=config.n_emb)
 
         self.node_embed_init_g = utils.read_embeddings(filename=config.pretrain_emb_filename_g,
-                                                       n_node = self.n_node,
-                                                       n_embed = config.n_emb)
+                                                       n_node=self.n_node,
+                                                       n_embed=config.n_emb)
     
         # 构建或读取 BFS-trees
         self.trees = None
@@ -39,7 +39,7 @@ class GraphGAN(object):
             self.trees = pickle.load(pickle_file)
             pickle_file.close()
         else:
-            print("constructiong BFS-trees")
+            print("constructing BFS-trees")
             pickle_file = open(config.cache_filename, 'wb')
             if config.multi_processing:
                 self.construct_trees_with_mp(self.root_nodes)
@@ -54,7 +54,6 @@ class GraphGAN(object):
         self.generator = None
         self.build_generator()
         self.build_discriminator()
-
 
     def construct_trees(self, nodes):
         """ use BFS algorithm to construct the BFS-trees
@@ -87,10 +86,10 @@ class GraphGAN(object):
         return trees
 
     def build_generator(self):
-        self.generator = generator.Generator(n_node=self.n_node, node_emd_init = self.node_embed_init_g)
+        self.generator = generator.Generator(n_node=self.n_node, node_emd_init=self.node_embed_init_g)
     
     def build_discriminator(self):
-        self.discriminator = discriminator.Discriminator(n_node = self.n_node, node_emd_init=self.node_embed_init_d)
+        self.discriminator = discriminator.Discriminator(n_node=self.n_node, node_emd_init=self.node_embed_init_d)
 
     def train(self):
         
@@ -129,15 +128,6 @@ class GraphGAN(object):
                     #            sum(node_embedding ** 2) / 2 +
                     #            sum(bias ** 2) / 2
                     #        )
-
-        
-
-
-
-
-
-
-
 
     def prepare_data_for_d(self):
         """为判别器提供正采样和负采样，并记录日志"""
@@ -197,7 +187,7 @@ class GraphGAN(object):
                         # 在当前的版本 None 被返回
                         return None, None
                     if root in node_neighbor:
-                        node_neighbr.remove(root)
+                        node_neighbor.remove(root)
                 relevance_probability = all_score[current_node, node_neighbor]
                 relevance_probability = utils.softmax(relevance_probability)
                 next_node = np.random.choice(node_neighbor, size=1, p=relevance_probability)[0] # 选择下一个节点
@@ -210,21 +200,12 @@ class GraphGAN(object):
             n = n + 1
         return samples, paths
 
-
-
-
-
-
-
-
-
-
     def write_embeddings_to_file(self):
         """把G和D的Embedding写入文件里"""
         modes = [self.generator, self.discriminator]
 
         for i in range(2):
-            embedding_matrix = modes[i].embedding_matrix
+            embeddings_matrix = modes[i].embedding_matrix
             index = np.array(range(self.n_node)).reshape(-1,1)
             embeddings_matrix = np.hstack([index, embeddings_matrix])
             embeddings_list = embedding_matrix.tolist()
