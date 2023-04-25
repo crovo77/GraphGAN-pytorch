@@ -19,9 +19,9 @@ update_ratio = 1    # updating ratio when choose the trees
 load_model = False  # whether loading existing model for initialization
 save_steps = 10
 
-# other hyper-parameters
+# other hyperparameters
 n_emb = 50
-multi_processing = False  # whether using multi-processing to construct BFS-trees
+multi_processing = False  # whether using multiprocessing to construct BFS-trees
 window_size = 2
 
 # application and dataset settings

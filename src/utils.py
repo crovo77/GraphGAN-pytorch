@@ -17,8 +17,8 @@ def read_edges(train_filename, test_filename):
         test_filename: test file name
 
     Returns:
-        node_num: int, number of nodes in the graph
-        graph: dict, node_id -> list of neighbors in the graph
+        node_num: int, number of nodes in the graph.
+        graph: dict, node_id -> list of neighbors in the graph.
     """
 
     graph = {}
@@ -134,18 +134,19 @@ def softmax(x):
     e_x = np.exp(x - np.max(x))  # for computation stability
     return e_x / e_x.sum()
 
-def clip_by_tensor(t,t_min,t_max):
-        """
-        clip_by_tensor
-        :param t: tensor
-        :param t_min: min
-        :param t_max: max
-        :return: cliped tensor
-        """
-        t=t.float()
-        # t_min=t_min.float()
-        # t_max=t_max.float()
-    
-        result = (t >= t_min).float() * t + (t < t_min).float() * t_min
-        result = (result <= t_max).float() * result + (result > t_max).float() * t_max
-        return result
+
+def clip_by_tensor(t, t_min, t_max):
+    """
+    clip_by_tensor
+    :param t: tensor
+    :param t_min: min
+    :param t_max: max
+    :return: clipped tensor
+    """
+    t = float(t)
+    # t_min=t_min.float()
+    # t_max=t_max.float()
+
+    result = float(t >= t_min) * t + float(t < t_min) * t_min
+    result = float(result <= t_max) * result + float(result > t_max) * t_max
+    return result

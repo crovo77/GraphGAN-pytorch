@@ -1,15 +1,16 @@
 import os
 import collections
 import tqdm
-import multiprocessing
+# import multiprocessing
 import pickle
 import numpy as np
-import torch 
-import src.GraphGAN.config as config
-import src.GraphGAN.discriminator as discriminator
-import src.GraphGAN.generator as generator
+import torch
+from src.GraphGAN import config
+from src.GraphGAN import discriminator
+from src.GraphGAN import generator
 from src import utils
 from src.evaluation import link_prediction as lp
+
 
 class GraphGAN(object):
     def __init__(self):
@@ -30,7 +31,7 @@ class GraphGAN(object):
         self.node_embed_init_g = utils.read_embeddings(filename=config.pretrain_emb_filename_g,
                                                        n_node=self.n_node,
                                                        n_embed=config.n_emb)
-    
+
         # 构建或读取 BFS-trees
         self.trees = None
         if os.path.isfile(config.cache_filename):
@@ -42,7 +43,7 @@ class GraphGAN(object):
             print("constructing BFS-trees")
             pickle_file = open(config.cache_filename, 'wb')
             if config.multi_processing:
-                self.construct_trees_with_mp(self.root_nodes)
+                pass  # self.construct_trees_with_mp(self.root_nodes)
             else:
                 self.trees = self.construct_trees(self.root_nodes)
             pickle.dump(self.trees, pickle_file)
@@ -68,7 +69,7 @@ class GraphGAN(object):
         trees = {}
         for root in tqdm.tqdm(nodes):
             trees[root] = {}
-            
+
             # 把每棵树的父节点设为自己
             trees[root][root] = [root]
 
@@ -87,25 +88,25 @@ class GraphGAN(object):
 
     def build_generator(self):
         self.generator = generator.Generator(n_node=self.n_node, node_emd_init=self.node_embed_init_g)
-    
+
     def build_discriminator(self):
         self.discriminator = discriminator.Discriminator(n_node=self.n_node, node_emd_init=self.node_embed_init_d)
 
     def train(self):
-        
+
         self.write_embeddings_to_file()
         self.evaluation(self)
-        
+
         print("start training ... ")
         for epoch in range(config.n_epochs):
             print("epoch %d" % epoch)
-            
+
             # 训练判别器
             center_nodes = []
             neighbor_nodes = []
             labels = []
-            for  d_epoch in range(config.n_epochs_dis):
-                # 每次 dis_interval 迭代都为判别器生成新节点
+            for d_epoch in range(config.n_epochs_dis):
+                # Every dis_interval number of times the discriminator will form a new node
                 if d_epoch % config.dis_interval == 0:
                     center_nodes, neighbor_nodes, labels = self.prepare_data_for_d()
                 # 开始训练
@@ -114,15 +115,17 @@ class GraphGAN(object):
                 np.random.shuffle(start_list)
                 for start in start_list:
                     end = start + config.batch_size_dis
-                    
-                    loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score, np.array(labels[start:end])).sum(0)
-                    
-                    # TODO：L2正则化
+
+                    loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score,
+                                                             np.array(labels[start:end])).sum(0)
+
+                    # TODO：L2 Regularization
                     # node_neighbor_embedding = self.discriminator
                     # node_embedding = pass
                     # bias = passe
 
-                    # loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score, np.array(labels[start:end])).sum(0) + \
+                    # loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score,
+                    #                                          np.array(labels[start:end])).sum(0) + \
                     #        config.lambda_dis * (
                     #            sum(node_neighbor_embedding ** 2) / 2 +
                     #            sum(node_embedding ** 2) / 2 +
@@ -138,7 +141,7 @@ class GraphGAN(object):
         for i in self.root_nodes:
             if np.random.rand() < config.update_ratio:
                 pos = self.graph[i]
-                neg, _ = self.sample(i, self.trees[i], len(pos), for_d = True)
+                neg, _ = self.sample(i, self.trees[i], len(pos), for_d=True)
                 if len(pos) != 0 and neg is not None:
                     # 正采样
                     center_nodes.extend([i] * len(pos))
@@ -148,10 +151,9 @@ class GraphGAN(object):
                     # 负采样
                     center_nodes.extend([i] * len(pos))
                     neighbor_nodes.extend(neg)
-                    labels.extend([0]*len(neg))
+                    labels.extend([0] * len(neg))
         return center_nodes, neighbor_nodes, labels
 
-    
     def sample(self, root, tree, sample_num, for_d):
         """从 BFS-tree 中采样节点
         
@@ -180,9 +182,9 @@ class GraphGAN(object):
             while True:
                 node_neighbor = tree[current_node][1:] if is_root else tree[current_node]
                 is_root = False
-                if len(node_neighbor) == 0:   # 当树只有一个节点(根)时
+                if len(node_neighbor) == 0:  # 当树只有一个节点(根)时
                     return None, None
-                if for_d: # 跳过单跳节点（正采样）
+                if for_d:  # 跳过单跳节点（正采样）
                     if node_neighbor == [root]:
                         # 在当前的版本 None 被返回
                         return None, None
@@ -190,9 +192,9 @@ class GraphGAN(object):
                         node_neighbor.remove(root)
                 relevance_probability = all_score[current_node, node_neighbor]
                 relevance_probability = utils.softmax(relevance_probability)
-                next_node = np.random.choice(node_neighbor, size=1, p=relevance_probability)[0] # 选择下一个节点
+                next_node = np.random.choice(node_neighbor, size=1, p=relevance_probability)[0]  # 选择下一个节点
                 paths[n].append(next_node)
-                if next_node == previous_node: # 结束条件
+                if next_node == previous_node:  # 结束条件
                     samples.append(current_node)
                     break
                 previous_node = current_node
@@ -206,11 +208,11 @@ class GraphGAN(object):
 
         for i in range(2):
             embeddings_matrix = modes[i].embedding_matrix
-            index = np.array(range(self.n_node)).reshape(-1,1)
+            index = np.array(range(self.n_node)).reshape(-1, 1)
             embeddings_matrix = np.hstack([index, embeddings_matrix])
-            embeddings_list = embedding_matrix.tolist()
+            embeddings_list = list(embeddings_matrix)
             embedding_str = [str(int(emb[0])) + "\t" + "\t".join([str(x) for x in emb[1:]]) + "\n"
-                             for emb in embedding_list]
+                             for emb in embeddings_list]
             with open(config.emb_filenames[i], "w+") as f:
                 lines = [str(self.n_node) + "\t" + str(config.n_emb) + "\n"] + embedding_str
                 f.writelines(lines)

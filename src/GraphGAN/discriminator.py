@@ -1,5 +1,4 @@
 import torch
-import src.GraphGAN.config as config
 
 
 class Discriminator(object):
@@ -10,13 +9,12 @@ class Discriminator(object):
         self.embedding_matrix = torch.randn(self.node_emd_init.shape)
         self.bias_vector = torch.zeros([self.n_node])
 
-        self.node_id = torch.Tensor([])
-        self.node_neighbor_id = torch.Tensor([])
-        self.reward = torch.Tensor([])
+        self.node_id = torch.Tensor([0])
+        self.node_neighbor_id = torch.Tensor([0])
+        self.reward = torch.Tensor([0])
 
         self.node_embedding = torch.index_select(self.embedding_matrix, 0, self.node_id)
         self.node_neighbor_embedding = torch.index_select(self.embedding_matrix, 0, self.node_neighbor_id)
-        self.bias = torch.index_select(self.bias_vector, 0, self.node_neighbor_id)
-        self.score = self.node_embedding*self.node_neighbor_embedding.sum(0) + self.bias
 
-        
+        self.bias = torch.index_select(self.bias_vector, 0, self.node_neighbor_id)
+        self.score = self.node_embedding * self.node_neighbor_embedding.sum(0) + self.bias

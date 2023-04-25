@@ -21,7 +21,7 @@ class LinkPredictEval(object):
         test_edges_neg = utils.read_edges_from_file(self.test_neg_filename)
         test_edges.extend(test_edges_neg)
 
-        # may exists isolated point
+        # isolated point may exist
         score_res = []
         for i in range(len(test_edges)):
             score_res.append(np.dot(self.emd[test_edges[i][0]], self.emd[test_edges[i][1]]))
