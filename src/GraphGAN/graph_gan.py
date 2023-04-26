@@ -182,19 +182,19 @@ class GraphGAN(object):
             while True:
                 node_neighbor = tree[current_node][1:] if is_root else tree[current_node]
                 is_root = False
-                if len(node_neighbor) == 0:  # 当树只有一个节点(根)时
+                if len(node_neighbor) == 0:  # 当树只有一个节点(根)时 Christy 1
                     return None, None
-                if for_d:  # 跳过单跳节点（正采样）
+                if for_d:  # 跳过单跳节点（正采样）Christy 2
                     if node_neighbor == [root]:
-                        # 在当前的版本 None 被返回
+                        # 在当前的版本 None 被返回 Christy 3
                         return None, None
                     if root in node_neighbor:
                         node_neighbor.remove(root)
                 relevance_probability = all_score[current_node, node_neighbor]
                 relevance_probability = utils.softmax(relevance_probability)
-                next_node = np.random.choice(node_neighbor, size=1, p=relevance_probability)[0]  # 选择下一个节点
+                next_node = np.random.choice(node_neighbor, size=1, p=relevance_probability)[0]  # 选择下一个节点 Christy 4
                 paths[n].append(next_node)
-                if next_node == previous_node:  # 结束条件
+                if next_node == previous_node:  # 结束条件 Christy 5
                     samples.append(current_node)
                     break
                 previous_node = current_node
@@ -203,7 +203,7 @@ class GraphGAN(object):
         return samples, paths
 
     def write_embeddings_to_file(self):
-        """把G和D的Embedding写入文件里"""
+        """把G和D的Embedding写入文件里 Christy 6"""
         modes = [self.generator, self.discriminator]
 
         for i in range(2):
