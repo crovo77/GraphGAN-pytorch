@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 
 def str_list_to_float(str_list):
@@ -135,7 +136,7 @@ def softmax(x):
     return e_x / e_x.sum()
 
 
-def clip_by_tensor(t, t_min, t_max):
+def clip_by_tensor(t: torch.Tensor, t_min: float, t_max: float) -> torch.Tensor:
     """
     clip_by_tensor
     :param t: tensor
@@ -143,10 +144,14 @@ def clip_by_tensor(t, t_min, t_max):
     :param t_max: max
     :return: clipped tensor
     """
-    t = float(t)
-    # t_min=t_min.float()
-    # t_max=t_max.float()
-
-    result = float(t >= t_min) * t + float(t < t_min) * t_min
-    result = float(result <= t_max) * result + float(result > t_max) * t_max
-    return result
+    # old code left here in case something is wrong and needs tweaking
+    # # t = t.float()
+    #
+    # # t_min=t_min.float()
+    # # t_max=t_max.float()
+    #
+    # result = float(t >= t_min) * t + float(t < t_min) * t_min
+    # result = float(result <= t_max) * result + float(result > t_max) * t_max
+    t[t < t_min] = t_min
+    t[t > t_max] = t_max
+    return t
