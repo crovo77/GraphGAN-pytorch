@@ -1,3 +1,11 @@
+# set up to use GPU
+torch_device = "cpu"
+try:
+    import torch_directml
+    if torch_directml.is_available():
+        torch_device = torch_directml.device()
+finally: pass
+
 modes = ["gen", "dis"]
 
 # training settings

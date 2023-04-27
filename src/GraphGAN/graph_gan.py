@@ -3,8 +3,8 @@ import collections
 import tqdm
 # import multiprocessing
 import pickle
-import numpy as np
 import torch
+import numpy as np
 from src.GraphGAN import config
 from src.GraphGAN import discriminator
 from src.GraphGAN import generator
@@ -113,24 +113,24 @@ class GraphGAN(object):
                 train_size = len(center_nodes)
                 start_list = list(range(0, train_size, config.batch_size_dis))
                 np.random.shuffle(start_list)
-                for start in start_list:
-                    end = start + config.batch_size_dis
-
-                    loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score,
-                                                             np.array(labels[start:end])).sum(0)
-
-                    # TODO：L2 Regularization
-                    # node_neighbor_embedding = self.discriminator
-                    # node_embedding = pass
-                    # bias = passe
-
-                    # loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score,
-                    #                                          np.array(labels[start:end])).sum(0) + \
-                    #        config.lambda_dis * (
-                    #            sum(node_neighbor_embedding ** 2) / 2 +
-                    #            sum(node_embedding ** 2) / 2 +
-                    #            sum(bias ** 2) / 2
-                    #        )
+                # for start in start_list:
+                #     end = start + config.batch_size_dis
+                #
+                #     loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score,
+                #                                              np.array(labels[start:end])).sum(0)
+                #
+                #     TODO：L2 Regularization
+                #     node_neighbor_embedding = self.discriminator
+                #     node_embedding = pass
+                #     bias = passe
+                #
+                #     loss = torch.nn.MultiLabelSoftMarginLoss(self.discriminator.score,
+                #                                              np.array(labels[start:end])).sum(0) + \
+                #            config.lambda_dis * (
+                #                sum(node_neighbor_embedding ** 2) / 2 +
+                #                sum(node_embedding ** 2) / 2 +
+                #                sum(bias ** 2) / 2
+                #            )
 
     def prepare_data_for_d(self):
         """为判别器提供正采样和负采样，并记录日志"""
@@ -168,7 +168,7 @@ class GraphGAN(object):
             paths: list, 从根节点到采样节点的路径
         """
 
-        all_score = self.generator.all_score
+        all_score: torch.Tensor = self.generator.all_score
         samples = []
         paths = []
         n = 0
@@ -182,19 +182,20 @@ class GraphGAN(object):
             while True:
                 node_neighbor = tree[current_node][1:] if is_root else tree[current_node]
                 is_root = False
-                if len(node_neighbor) == 0:  # 当树只有一个节点(根)时 Christy 1
+                if len(node_neighbor) == 0:  # When the tree only has one root - Christy 1
                     return None, None
-                if for_d:  # 跳过单跳节点（正采样）Christy 2
+                if for_d:  # skip single root (positive sampling) - Christy 2
                     if node_neighbor == [root]:
-                        # 在当前的版本 None 被返回 Christy 3
+                        # In the current version None is returned - Christy 3
                         return None, None
                     if root in node_neighbor:
                         node_neighbor.remove(root)
-                relevance_probability = all_score[current_node, node_neighbor]
-                relevance_probability = utils.softmax(relevance_probability)
-                next_node = np.random.choice(node_neighbor, size=1, p=relevance_probability)[0]  # 选择下一个节点 Christy 4
+                relevance_probability: torch.Tensor = all_score[current_node, node_neighbor]
+                relevance_probability = utils.softmax(relevance_probability).cpu()
+                # Choosing the next root - Christy 4
+                next_node = node_neighbor[torch.multinomial(relevance_probability, 1)]
                 paths[n].append(next_node)
-                if next_node == previous_node:  # 结束条件 Christy 5
+                if next_node == previous_node:  # Ending condition - Christy 5
                     samples.append(current_node)
                     break
                 previous_node = current_node
@@ -203,11 +204,11 @@ class GraphGAN(object):
         return samples, paths
 
     def write_embeddings_to_file(self):
-        """把G和D的Embedding写入文件里 Christy 6"""
+        """Put generator and discriminator embedding into the document - Christy 6"""
         modes = [self.generator, self.discriminator]
 
         for i in range(2):
-            embeddings_matrix = modes[i].embedding_matrix
+            embeddings_matrix = modes[i].embedding_matrix.cpu()
             index = np.array(range(self.n_node)).reshape(-1, 1)
             embeddings_matrix = np.hstack([index, embeddings_matrix])
             embeddings_list = list(embeddings_matrix)

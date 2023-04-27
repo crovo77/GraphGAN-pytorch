@@ -2,15 +2,15 @@ import numpy as np
 import torch
 
 
-def str_list_to_float(str_list):
+def str_list_to_float(str_list: list[str]) -> list[float]:
     return [float(item) for item in str_list]
 
 
-def str_list_to_int(str_list):
+def str_list_to_int(str_list: list[str]) -> list[int]:
     return [int(item) for item in str_list]
 
 
-def read_edges(train_filename, test_filename):
+def read_edges(train_filename: str, test_filename: str) -> tuple[int, dict[int, list]]:
     """read data from files
 
     Args:
@@ -48,14 +48,14 @@ def read_edges(train_filename, test_filename):
     return len(nodes), graph
 
 
-def read_edges_from_file(filename):
+def read_edges_from_file(filename: str) -> list[list[int]]:
     with open(filename, "r") as f:
         lines = f.readlines()
         edges = [str_list_to_int(line.split()) for line in lines]
     return edges
 
 
-def read_embeddings(filename, n_node, n_embed):
+def read_embeddings(filename: str, n_node: int, n_embed: int) -> np.ndarray:
     """read pretrained node embeddings
     """
 
@@ -64,13 +64,13 @@ def read_embeddings(filename, n_node, n_embed):
         embedding_matrix = np.random.rand(n_node, n_embed)
         for line in lines:
             emd = line.split()
-            
+
             # 把预训练的词向量替换到对应的位置，没有的就使用随机生成的，这样可以简单解决未登录词的问题
             embedding_matrix[int(emd[0]), :] = str_list_to_float(emd[1:])
         return embedding_matrix
 
 
-def reindex_node_id(edges):
+def reindex_node_id(edges: list):
     """reindex the original node ID to [0, node_num)
 
     Args:
@@ -96,7 +96,7 @@ def reindex_node_id(edges):
     return new_edges, new_nodes
 
 
-def generate_neg_links(train_filename, test_filename, test_neg_filename):
+def generate_neg_links(train_filename: str, test_filename: str, test_neg_filename: str) -> None:
     """
     generate neg links for link prediction evaluation
     Args:
@@ -131,8 +131,9 @@ def generate_neg_links(train_filename, test_filename, test_neg_filename):
         f.writelines(neg_edges_str)
 
 
-def softmax(x):
-    e_x = np.exp(x - np.max(x))  # for computation stability
+def softmax(x: torch.Tensor) -> torch.Tensor:
+    # changed np.max() to torch.max() and np.exp to torch.exp
+    e_x = torch.exp(x - torch.max(x))  # for computation stability
     return e_x / e_x.sum()
 
 
